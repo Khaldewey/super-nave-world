@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de Nave</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        .game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            margin: 0 auto;
+            background-color: #222;
+        }
+
+        .ship {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: blue;
+            transition: 0.2s; /* Adicionamos uma transição suave para o movimento da nave */
+        }
+
+        .bullet {
+            position: absolute;
+            width: 5px;
+            height: 20px;
+            background-color: red;
+            display: none;
+        }
+
+        .meteor {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: gray;
+        }
+
+        .game-over {
+            position: absolute;
+            font-size: 36px;
+            color: red;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="ship"></div>
+        <div class="meteor"></div>
+        <div class="bullet"></div>
+        <div class="game-over">Game Over</div>
+    </div>
+    <script>
+        const gameContainer = document.querySelector('.game-container');
+        const ship = document.querySelector('.ship');
+        let bullet = document.querySelector('.bullet');
+        let meteor = null;
+        let gameOver = document.querySelector('.game-over');
+
+        let shipX = 375;
+        let shipY = 550;
+        let bulletX = -20;
+        let bulletY = -20;
+        let isBulletActive = false;
+        let isGameOver = false;
+
+        gameContainer.addEventListener('mousemove', (event) => {
+            if (!isGameOver) {
+                // Suavizamos a movimentação do mouse com uma velocidade limitada
+                const mouseX = event.clientX - gameContainer.getBoundingClientRect().left - ship.clientWidth / 2;
+                const mouseY = event.clientY - gameContainer.getBoundingClientRect().top - ship.clientHeight / 2;
+
+                // Aplicamos uma interpolação linear para mover a nave suavemente
+                const speed = 0.1;
+                shipX += (mouseX - shipX) * speed;
+                shipY += (mouseY - shipY) * speed;
+
+                moveShip();
+            }
+        });
+
+        gameContainer.addEventListener('click', () => {
+            if (!isBulletActive && !isGameOver) {
+                fireBullet();
+            }
+        });
+
+        function moveShip() {
+            ship.style.left = shipX + 'px';
+            ship.style.top = shipY + 'px';
+        }
+
+        function fireBullet() {
+            bulletX = shipX + 22.5;
+            bulletY = shipY;
+            bullet.style.left = bulletX + 'px';
+            bullet.style.top = bulletY + 'px';
+            bullet.style.display = 'block';
+
+            isBulletActive = true;
+
+            function moveBullet() {
+                if (isBulletActive) {
+                    bulletY -= 10;
+                    bullet.style.top = bulletY + 'px';
+
+                    if (bulletY > -20) {
+                        requestAnimationFrame(moveBullet);
+                    } else {
+                        bullet.style.display = 'none';
+                        isBulletActive = false;
+                    }
+                }
+            }
+
+            moveBullet();
+        }
+
+        function moveMeteor() {
+            meteor = document.querySelector('.meteor');
+            const meteorPositionX = parseFloat(getComputedStyle(meteor).left); // Obtemos a posição atual do meteoro
+            let meteorPositionY = parseFloat(getComputedStyle(meteor).top); // Obtemos a posição atual do meteoro
+
+            meteorPositionY += 5;
+            meteor.style.top = meteorPositionY + 'px';
+
+            if (meteorPositionY > 600) {
+                meteorPositionY = -50;
+                meteor.style.left = Math.random() * 750 + 'px';
+            }
+
+            checkCollision();
+            
+            if (meteorPositionY >= 600) {
+                // Game Over quando o meteoro atinge o limite inferior
+                gameOver.style.display = 'block';
+                isGameOver = true;
+            }
+
+            if (!isGameOver) {
+                requestAnimationFrame(moveMeteor);
+            }
+        }
+
+        function checkCollision() {
+            if (!bullet || !meteor || isGameOver) return;
+
+            const bulletRect = bullet.getBoundingClientRect();
+            const meteorRect = meteor.getBoundingClientRect();
+            const shipRect = ship.getBoundingClientRect();
+
+            if (
+                bulletRect.left < meteorRect.right &&
+                bulletRect.right > meteorRect.left &&
+                bulletRect.top < meteorRect.bottom &&
+                bulletRect.bottom > meteorRect.top
+            ) {
+                bullet.style.display = 'none';
+                isBulletActive = false;
+                meteor.style.left = Math.random() * 750 + 'px';
+                meteor.style.top = '-50px'; // Reposicionamos o meteoro acima do topo
+            }
+
+            if (
+                shipRect.left < meteorRect.right &&
+                shipRect.right > meteorRect.left &&
+                shipRect.top < meteorRect.bottom &&
+                shipRect.bottom > meteorRect.top
+            ) {
+                gameOver.style.display = 'block';
+                isGameOver = true;
+            }
+        }
+
+        function initialize() {
+            meteor = document.querySelector('.meteor');
+            meteor.style.left = Math.random() * 750 + 'px';
+            requestAnimationFrame(moveMeteor);
+        }
+
+        initialize();
+    </script>
+</body>
+</html>
